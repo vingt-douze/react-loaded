@@ -2,13 +2,13 @@
 	"name": "react-loaded",
 	"version": "1.0.0-beta.1",
 	"description": "Auto-generated, SSR-ready skeleton components for React",
-	"homepage": "https://github.com/Pierre-LHOSTE/react-loaded#readme",
+	"homepage": "https://github.com/vingt-douze/react-loaded#readme",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/Pierre-LHOSTE/react-loaded.git"
+		"url": "git+https://github.com/vingt-douze/react-loaded.git"
 	},
 	"bugs": {
-		"url": "https://github.com/Pierre-LHOSTE/react-loaded/issues"
+		"url": "https://github.com/vingt-douze/react-loaded/issues"
 	},
 	"keywords": [
 		"react",
