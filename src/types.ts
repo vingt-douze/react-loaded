@@ -1,4 +1,4 @@
-import type { ComponentType } from "react";
+import type { ComponentType, CSSProperties } from "react";
 
 export interface CapturedNode {
 	tag: string;
@@ -21,5 +21,7 @@ export interface CapturePayload {
 export type SkeletonProps = {
 	variant?: "filled" | "ghost";
 	className?: string;
+	style?: CSSProperties;
+	dataSkId?: string;
 };
 export type SkeletonRegistry = Record<string, ComponentType<SkeletonProps>>;

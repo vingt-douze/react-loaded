@@ -16,6 +16,11 @@
 	pointer-events: auto;
 }
 
+.loaded-dev-skeleton.loaded-skeleton {
+	user-select: auto;
+	pointer-events: auto;
+}
+
 .loaded-skeleton,
 .loaded-skeleton * {
 	color: transparent !important;
@@ -132,5 +137,9 @@
 }
 
 .loaded-no-animate .loaded-skeleton.loaded-animate {
+	animation: none !important;
+}
+
+.loaded-no-animate.loaded-skeleton.loaded-animate {
 	animation: none !important;
 }

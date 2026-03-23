@@ -44,11 +44,15 @@ describe("generateComponent", () => {
 
 		expect(output).toContain("export function UserCardSkeleton");
 		expect(output).toContain(
+			'{ variant = "filled", className, style, dataSkId }',
+		);
+		expect(output).toContain(
 			`className={\`root-shell loaded-skeleton loaded-animate${variantClassSuffix}${classNamePropSuffix}\`}`,
 		);
 		expect(output).toContain(
-			'style={{ backgroundColor: "rgb(0, 0, 0)", "--custom-width": "12ch" } as React.CSSProperties}',
+			'style={{ ...{ backgroundColor: "rgb(0, 0, 0)", "--custom-width": "12ch" }, ...style } as React.CSSProperties}',
 		);
+		expect(output).toContain("data-sk-id={dataSkId}");
 		expect(output).toContain('tabIndex="0"');
 		expect(output).toContain('className="title loaded-text"');
 		expect(output).toContain('"--loaded-text-width": "var(--sk-w-t0, auto)"');
@@ -77,7 +81,9 @@ describe("generateComponent", () => {
 		expect(output).toContain(
 			`className={\`loaded-skeleton loaded-animate loaded-media${variantClassSuffix}${classNamePropSuffix}\`}`,
 		);
-		expect(output).toContain('style={{ width: "320px", height: "180px" }}');
+		expect(output).toContain(
+			'style={{ ...{ width: "320px", height: "180px" }, ...style } as React.CSSProperties}',
+		);
 		expect(output).toContain('aria-label="thumbnail"');
 		expect(output).toContain("<div");
 		expect(output).not.toContain("<img");
@@ -114,7 +120,9 @@ describe("generateComponent", () => {
 		expect(output).toContain("<div");
 		expect(output).not.toContain("<svg");
 		expect(output).toContain("loaded-svg");
-		expect(output).toContain('style={{ width: "24px", height: "24px" }}');
+		expect(output).toContain(
+			'style={{ ...{ width: "24px", height: "24px" }, ...style } as React.CSSProperties}',
+		);
 	});
 
 	it("renders interactive nodes with non-breaking space", () => {

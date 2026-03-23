@@ -1,8 +1,15 @@
 import {
+	Children,
 	type CSSProperties,
+	cloneElement,
+	Fragment,
+	isValidElement,
 	type ReactNode,
+	type RefCallback,
+	version as reactVersion,
 	useCallback,
 	useEffect,
+	useId,
 	useLayoutEffect,
 	useRef,
 	useState,
@@ -12,6 +19,7 @@ import { serializeElement } from "../capture/serialize";
 import { usePersistedHeights } from "../hooks/usePersistedHeights";
 import { usePersistedWidths } from "../hooks/usePersistedWidths";
 import { collectTextDimensions } from "../utils/collect-text-widths";
+import { mergeRefs } from "../utils/mergeRefs";
 import {
 	useInitialHeightSnapshot,
 	useInitialWidthSnapshot,
@@ -23,12 +31,19 @@ const isDev = process.env.NODE_ENV !== "production";
 
 const useIsomorphicLayoutEffect =
 	typeof window === "undefined" ? useEffect : useLayoutEffect;
+const reactMajorVersion = Number.parseInt(
+	reactVersion.split(".")[0] ?? "18",
+	10,
+);
+const supportsRefPropOnFunctionComponents = reactMajorVersion >= 19;
+const FORWARD_REF_SYMBOL = Symbol.for("react.forward_ref");
+const MEMO_SYMBOL = Symbol.for("react.memo");
 
 function buildDimensionVars(
 	widths: Record<string, number> | null | undefined,
 	heights: Record<string, number> | null | undefined,
 ): CSSProperties {
-	const style: Record<string, string> = { display: "contents" };
+	const style: Record<string, string> = {};
 
 	if (widths) {
 		for (const [key, value] of Object.entries(widths)) {
@@ -45,6 +60,68 @@ function buildDimensionVars(
 	}
 
 	return style as CSSProperties;
+}
+
+function joinClassNames(
+	...classes: Array<string | false | null | undefined>
+): string | undefined {
+	const filtered = classes.filter(Boolean);
+	if (filtered.length === 0) return undefined;
+	return filtered.join(" ");
+}
+
+function getElementRef(child: unknown): unknown {
+	if (!child || typeof child !== "object") return null;
+	const fromProps = (child as { props?: { ref?: unknown } }).props?.ref;
+	const legacy =
+		reactMajorVersion < 19 ? (child as { ref?: unknown }).ref : undefined;
+	if (fromProps != null && legacy != null && fromProps !== legacy) {
+		return mergeRefs(
+			legacy as RefCallback<HTMLElement>,
+			fromProps as RefCallback<HTMLElement>,
+		);
+	}
+	return fromProps ?? legacy ?? null;
+}
+
+function canAttachRefToType(type: unknown): boolean {
+	if (typeof type === "string") return true;
+
+	if (typeof type === "function") {
+		const isClassComponent = Boolean(
+			(type as { prototype?: { isReactComponent?: unknown } }).prototype
+				?.isReactComponent,
+		);
+		return isClassComponent || supportsRefPropOnFunctionComponents;
+	}
+
+	if (typeof type === "object" && type != null) {
+		const tagged = type as { $$typeof?: symbol; type?: unknown };
+		if (tagged.$$typeof === FORWARD_REF_SYMBOL) return true;
+		if (tagged.$$typeof === MEMO_SYMBOL) {
+			return canAttachRefToType(tagged.type);
+		}
+	}
+
+	return false;
+}
+
+function tryCloneWithRef(
+	children: ReactNode,
+	ref: RefCallback<HTMLElement>,
+): ReactNode | null {
+	try {
+		const child = Children.only(children);
+		if (!isValidElement(child)) return null;
+		if (child.type === Fragment) return null;
+		if (!canAttachRefToType(child.type)) return null;
+		const existingRef = getElementRef(child);
+		return cloneElement(child, {
+			ref: mergeRefs(ref, existingRef as RefCallback<HTMLElement> | null),
+		} as Record<string, unknown>);
+	} catch {
+		return null;
+	}
 }
 
 export interface AutoSkeletonProps {
@@ -72,9 +149,14 @@ export function AutoSkeleton({
 	_textHeights,
 }: AutoSkeletonProps) {
 	const registry = useRegistry();
-	const captureRef = useRef<HTMLDivElement>(null);
-	const measureRef = useRef<HTMLDivElement>(null);
-	const skeletonRef = useRef<HTMLDivElement>(null);
+	const captureRef = useRef<HTMLElement>(null);
+	const measureRef = useRef<HTMLElement>(null);
+	const captureHasWrapperRef = useRef(false);
+	const warnedRef = useRef(false);
+	const warnedCaptureRef = useRef(false);
+	const warnedMissingGeneratedRef = useRef(false);
+	const [forceDevCaptureWrapper, setForceDevCaptureWrapper] = useState(false);
+	const generatedRootClass = `loaded-skeleton-root-${useId().replace(/[^a-zA-Z0-9_-]/g, "_")}`;
 	const initialWidths = useInitialWidthSnapshot(id);
 	const initialHeights = useInitialHeightSnapshot(id);
 	const [measuredWidths, setMeasuredWidths] = useState<
@@ -101,19 +183,26 @@ export function AutoSkeleton({
 	// Measure text dimensions once children are rendered (loading=false)
 	const handleMeasure = useCallback(() => {
 		if (loading) return;
-		if (!measureRef.current) return;
+		const target = measureRef.current;
+		if (!target) {
+			if (isDev && !warnedRef.current) {
+				warnedRef.current = true;
+				console.warn(
+					`[react-loaded] Could not access DOM for "${id}". ` +
+						"Wrap children in a DOM element or use forwardRef for precise dimensions.",
+				);
+			}
+			return;
+		}
 
-		const firstChild = measureRef.current.firstElementChild;
-		if (!firstChild) return;
-
-		const { widths, heights } = collectTextDimensions(firstChild);
+		const { widths, heights } = collectTextDimensions(target);
 		if (Object.keys(widths).length > 0) {
 			setMeasuredWidths(widths);
 		}
 		if (Object.keys(heights).length > 0) {
 			setMeasuredHeights(heights);
 		}
-	}, [loading]);
+	}, [loading, id]);
 
 	useEffect(() => {
 		handleMeasure();
@@ -121,17 +210,54 @@ export function AutoSkeleton({
 
 	const widthsToApply = _textWidths ?? storedWidths;
 	const heightsToApply = _textHeights ?? storedHeights;
-	const skeletonWrapperStyle = buildDimensionVars(
-		widthsToApply,
-		heightsToApply,
+	const skeletonRootStyle = buildDimensionVars(widthsToApply, heightsToApply);
+	const generatedClassName = joinClassNames(
+		className,
+		!animate && "loaded-no-animate",
+		isDev && "loaded-dev-skeleton",
+		generatedRootClass,
 	);
+	const Generated = registry[id];
+	const hasGeneratedSkeleton = loading && Boolean(Generated);
 
 	useIsomorphicLayoutEffect(() => {
-		if (!loading || !skeletonRef.current) return;
-		if (!widthsToApply && !heightsToApply) return;
+		if (!loading) return;
+		const generatedRoot =
+			document.getElementsByClassName(generatedRootClass)[0];
+		if (!(generatedRoot instanceof HTMLElement)) return;
+
+		for (let i = generatedRoot.style.length - 1; i >= 0; i -= 1) {
+			const prop = generatedRoot.style.item(i);
+			if (prop.startsWith("--sk-w-")) {
+				const key = prop.slice("--sk-w-".length);
+				if (!widthsToApply || !(key in widthsToApply)) {
+					generatedRoot.style.removeProperty(prop);
+				}
+			}
+			if (prop.startsWith("--sk-h-")) {
+				const key = prop.slice("--sk-h-".length);
+				if (!heightsToApply || !(key in heightsToApply)) {
+					generatedRoot.style.removeProperty(prop);
+				}
+			}
+		}
+
+		if (widthsToApply) {
+			for (const [key, value] of Object.entries(widthsToApply)) {
+				if (!Number.isFinite(value) || value < 0) continue;
+				generatedRoot.style.setProperty(`--sk-w-${key}`, `${value}px`);
+			}
+		}
+
+		if (heightsToApply) {
+			for (const [key, value] of Object.entries(heightsToApply)) {
+				if (!Number.isFinite(value) || value < 0) continue;
+				generatedRoot.style.setProperty(`--sk-h-${key}`, `${value}px`);
+			}
+		}
 
 		const textElements =
-			skeletonRef.current.querySelectorAll<HTMLElement>("[data-sk-key]");
+			generatedRoot.querySelectorAll<HTMLElement>("[data-sk-key]");
 		for (const el of textElements) {
 			const key = el.dataset.skKey;
 			if (!key) continue;
@@ -145,14 +271,48 @@ export function AutoSkeleton({
 				);
 			}
 		}
-	}, [loading, widthsToApply, heightsToApply]);
+	}, [generatedRootClass, heightsToApply, loading, widthsToApply]);
 
 	useEffect(() => {
 		if (!isDev) return;
-		if (!captureRef.current) return;
+		setForceDevCaptureWrapper(false);
+		warnedCaptureRef.current = false;
+		warnedMissingGeneratedRef.current = false;
+	}, [id, loading]);
 
-		const root = captureRef.current.firstElementChild;
-		if (!root) return;
+	useEffect(() => {
+		if (!isDev) return;
+
+		const captureTarget = captureRef.current;
+		if (!captureTarget) {
+			if (!hasGeneratedSkeleton && !forceDevCaptureWrapper) {
+				setForceDevCaptureWrapper(true);
+				return;
+			}
+			if (!warnedCaptureRef.current) {
+				warnedCaptureRef.current = true;
+				console.warn(
+					`[react-loaded] Could not access DOM for capture of "${id}". ` +
+						"Wrap children in a DOM element or expose a ref-capable root.",
+				);
+			}
+			return;
+		}
+		warnedCaptureRef.current = false;
+
+		const root = captureHasWrapperRef.current
+			? captureTarget.firstElementChild
+			: captureTarget;
+		if (!root) {
+			if (!warnedCaptureRef.current) {
+				warnedCaptureRef.current = true;
+				console.warn(
+					`[react-loaded] Could not resolve capture root for "${id}". ` +
+						"Wrap children in a DOM element or expose a ref-capable root.",
+				);
+			}
+			return;
+		}
 
 		const timer = setTimeout(() => {
 			const tree = serializeElement(root);
@@ -166,56 +326,62 @@ export function AutoSkeleton({
 		}, 100);
 
 		return () => clearTimeout(timer);
-	}, [id]);
+	}, [forceDevCaptureWrapper, hasGeneratedSkeleton, id, loading]);
 
-	// When not loading in production, render children with a measure wrapper
+	// When not loading in production, render children with a measure ref
 	if (!loading && !isDev) {
+		const cloned = tryCloneWithRef(children, (el) => {
+			measureRef.current = el;
+		});
+		if (cloned) return <>{cloned}</>;
 		return (
-			<div ref={measureRef} style={{ display: "contents" }}>
+			<div
+				ref={(el) => {
+					measureRef.current = el;
+				}}
+				style={{ display: "contents" }}
+			>
 				{children}
 			</div>
 		);
 	}
 
-	const Generated = registry[id];
-
-	if (isDev && loading && !Generated) {
+	if (isDev && loading && !Generated && !warnedMissingGeneratedRef.current) {
+		warnedMissingGeneratedRef.current = true;
 		console.warn(
 			`[react-loaded] No generated skeleton found for id "${id}". ` +
 				"Run the autoskeleton CLI to capture and generate it.",
 		);
 	}
 
-	const renderedSkeleton =
-		loading && Generated ? (
-			animate ? (
-				<Generated variant={variant} className={className} />
-			) : (
-				<div className="loaded-no-animate">
-					<Generated variant={variant} className={className} />
-				</div>
-			)
-		) : null;
 	const generatedSkeleton =
-		isDev && renderedSkeleton ? (
-			<div className="loaded-dev-skeleton">{renderedSkeleton}</div>
-		) : (
-			renderedSkeleton
-		);
+		hasGeneratedSkeleton && Generated ? (
+			<SkeletonContext.Provider value={true}>
+				<Generated
+					variant={variant}
+					className={generatedClassName}
+					style={skeletonRootStyle}
+					dataSkId={id}
+				/>
+			</SkeletonContext.Provider>
+		) : null;
 
 	// Production: use the generated skeleton if available, otherwise render children
 	if (!isDev) {
 		if (generatedSkeleton) {
-			return (
-				<SkeletonContext.Provider value={true}>
-					<div ref={skeletonRef} data-sk-id={id} style={skeletonWrapperStyle}>
-						{generatedSkeleton}
-					</div>
-				</SkeletonContext.Provider>
-			);
+			return generatedSkeleton;
 		}
+		const cloned = tryCloneWithRef(children, (el) => {
+			measureRef.current = el;
+		});
+		if (cloned) return <>{cloned}</>;
 		return (
-			<div ref={measureRef} style={{ display: "contents" }}>
+			<div
+				ref={(el) => {
+					measureRef.current = el;
+				}}
+				style={{ display: "contents" }}
+			>
 				{children}
 			</div>
 		);
@@ -223,36 +389,47 @@ export function AutoSkeleton({
 
 	// Dev: always render children for capture, even when loading=false
 	// Show generated skeleton if loading and available
+	const mergedDevRef: RefCallback<HTMLElement> = (el) => {
+		captureRef.current = el;
+		measureRef.current = el;
+	};
+
+	// When skeleton is shown, children are hidden off-screen — keep the wrapper
+	if (generatedSkeleton) {
+		captureHasWrapperRef.current = true;
+		return (
+			<>
+				{generatedSkeleton}
+				<div
+					ref={mergedDevRef}
+					aria-hidden="true"
+					style={{
+						position: "fixed",
+						top: 0,
+						left: "-10000px",
+						width: "100%",
+						visibility: "hidden",
+						pointerEvents: "none",
+					}}
+				>
+					{children}
+				</div>
+			</>
+		);
+	}
+
+	// No skeleton shown — children are visible, try to eliminate wrapper
+	const cloned = forceDevCaptureWrapper
+		? null
+		: tryCloneWithRef(children, mergedDevRef);
+	if (cloned) {
+		captureHasWrapperRef.current = false;
+		return <>{cloned}</>;
+	}
+	captureHasWrapperRef.current = true;
 	return (
-		<>
-			{generatedSkeleton ? (
-				<SkeletonContext.Provider value={true}>
-					<div ref={skeletonRef} data-sk-id={id} style={skeletonWrapperStyle}>
-						{generatedSkeleton}
-					</div>
-				</SkeletonContext.Provider>
-			) : null}
-			<div
-				ref={(el) => {
-					captureRef.current = el;
-					measureRef.current = el;
-				}}
-				aria-hidden="true"
-				style={
-					generatedSkeleton
-						? {
-								position: "fixed",
-								top: 0,
-								left: "-10000px",
-								width: "100%",
-								visibility: "hidden",
-								pointerEvents: "none",
-							}
-						: { display: "contents" }
-				}
-			>
-				{children}
-			</div>
-		</>
+		<div ref={mergedDevRef} style={{ display: "contents" }}>
+			{children}
+		</div>
 	);
 }

@@ -1,4 +1,5 @@
 import { act, render, screen } from "@testing-library/react";
+import { type CSSProperties, createRef, Fragment, forwardRef } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { sendCapture } from "../capture/client";
 import { serializeElement } from "../capture/serialize";
@@ -27,6 +28,13 @@ const mockTree: CapturedNode = {
 	nodeType: "layout",
 };
 
+type GeneratedProps = {
+	variant?: "filled" | "ghost";
+	className?: string;
+	style?: CSSProperties;
+	dataSkId?: string;
+};
+
 describe("AutoSkeleton", () => {
 	beforeEach(() => {
 		vi.useFakeTimers();
@@ -41,8 +49,17 @@ describe("AutoSkeleton", () => {
 	it("renders generated skeleton in dev and still captures source children", () => {
 		mockedSerializeElement.mockReturnValue(mockTree);
 
-		function Generated() {
-			return <div data-testid="generated">Generated</div>;
+		function Generated({ className, style, dataSkId }: GeneratedProps) {
+			return (
+				<div
+					data-testid="generated"
+					className={className}
+					style={style}
+					data-sk-id={dataSkId}
+				>
+					Generated
+				</div>
+			);
 		}
 
 		render(
@@ -98,8 +115,17 @@ describe("AutoSkeleton", () => {
 	});
 
 	it("sets width CSS variables on skeleton wrapper from persisted snapshot", () => {
-		function Generated() {
-			return <p data-testid="generated-text">Generated</p>;
+		function Generated({ className, style, dataSkId }: GeneratedProps) {
+			return (
+				<p
+					data-testid="generated-text"
+					className={className}
+					style={style}
+					data-sk-id={dataSkId}
+				>
+					Generated
+				</p>
+			);
 		}
 
 		render(
@@ -125,8 +151,17 @@ describe("AutoSkeleton", () => {
 	});
 
 	it("sets height CSS variables on skeleton wrapper from persisted snapshot", () => {
-		function Generated() {
-			return <p data-testid="generated-text">Generated</p>;
+		function Generated({ className, style, dataSkId }: GeneratedProps) {
+			return (
+				<p
+					data-testid="generated-text"
+					className={className}
+					style={style}
+					data-sk-id={dataSkId}
+				>
+					Generated
+				</p>
+			);
 		}
 
 		render(
@@ -150,8 +185,17 @@ describe("AutoSkeleton", () => {
 	});
 
 	it("sets both width and height CSS variables from persisted snapshot", () => {
-		function Generated() {
-			return <p data-testid="generated-text">Generated</p>;
+		function Generated({ className, style, dataSkId }: GeneratedProps) {
+			return (
+				<p
+					data-testid="generated-text"
+					className={className}
+					style={style}
+					data-sk-id={dataSkId}
+				>
+					Generated
+				</p>
+			);
 		}
 
 		render(
@@ -194,9 +238,18 @@ describe("AutoSkeleton", () => {
 	});
 
 	it("enables skeleton mode context for generated skeleton trees", () => {
-		function Generated() {
+		function Generated({ className, style, dataSkId }: GeneratedProps) {
 			const isSkeletonMode = useIsSkeletonMode();
-			return <div data-testid="generated-mode">{String(isSkeletonMode)}</div>;
+			return (
+				<div
+					data-testid="generated-mode"
+					className={className}
+					style={style}
+					data-sk-id={dataSkId}
+				>
+					{String(isSkeletonMode)}
+				</div>
+			);
 		}
 
 		render(
@@ -229,8 +282,17 @@ describe("AutoSkeleton", () => {
 	});
 
 	it("renders children directly when loading=false", () => {
-		function Generated() {
-			return <div data-testid="generated">Generated</div>;
+		function Generated({ className, style, dataSkId }: GeneratedProps) {
+			return (
+				<div
+					data-testid="generated"
+					className={className}
+					style={style}
+					data-sk-id={dataSkId}
+				>
+					Generated
+				</div>
+			);
 		}
 
 		render(
@@ -246,8 +308,17 @@ describe("AutoSkeleton", () => {
 	});
 
 	it("renders children even when skeleton is registered and loading=false", () => {
-		function Generated() {
-			return <div data-testid="generated">Skeleton</div>;
+		function Generated({ className, style, dataSkId }: GeneratedProps) {
+			return (
+				<div
+					data-testid="generated"
+					className={className}
+					style={style}
+					data-sk-id={dataSkId}
+				>
+					Skeleton
+				</div>
+			);
 		}
 
 		render(
@@ -263,8 +334,17 @@ describe("AutoSkeleton", () => {
 	});
 
 	it("transitions from loading=true to loading=false", () => {
-		function Generated() {
-			return <div data-testid="generated">Skeleton</div>;
+		function Generated({ className, style, dataSkId }: GeneratedProps) {
+			return (
+				<div
+					data-testid="generated"
+					className={className}
+					style={style}
+					data-sk-id={dataSkId}
+				>
+					Skeleton
+				</div>
+			);
 		}
 
 		const { rerender } = render(
@@ -290,8 +370,17 @@ describe("AutoSkeleton", () => {
 	});
 
 	it("transitions from loading=false to loading=true", () => {
-		function Generated() {
-			return <div data-testid="generated">Skeleton</div>;
+		function Generated({ className, style, dataSkId }: GeneratedProps) {
+			return (
+				<div
+					data-testid="generated"
+					className={className}
+					style={style}
+					data-sk-id={dataSkId}
+				>
+					Skeleton
+				</div>
+			);
 		}
 
 		const { rerender } = render(
@@ -337,8 +426,17 @@ describe("AutoSkeleton", () => {
 	});
 
 	it("wraps generated skeleton in .loaded-no-animate when animate=false", () => {
-		function Generated() {
-			return <div data-testid="generated">Skeleton</div>;
+		function Generated({ className, style, dataSkId }: GeneratedProps) {
+			return (
+				<div
+					data-testid="generated"
+					className={className}
+					style={style}
+					data-sk-id={dataSkId}
+				>
+					Skeleton
+				</div>
+			);
 		}
 
 		render(
@@ -354,8 +452,21 @@ describe("AutoSkeleton", () => {
 	});
 
 	it("passes variant to generated skeleton component", () => {
-		function Generated({ variant }: { variant?: "filled" | "ghost" }) {
-			return <div data-testid="gen" data-variant={variant} />;
+		function Generated({
+			variant,
+			className,
+			style,
+			dataSkId,
+		}: GeneratedProps) {
+			return (
+				<div
+					data-testid="gen"
+					data-variant={variant}
+					className={className}
+					style={style}
+					data-sk-id={dataSkId}
+				/>
+			);
 		}
 
 		render(
@@ -403,6 +514,130 @@ describe("AutoSkeleton", () => {
 
 		warnSpy.mockRestore();
 	});
+
+	it("renders single DOM child without a wrapper div when loading=false and no skeleton", () => {
+		const { container } = render(
+			<LoadedProvider registry={{}}>
+				<AutoSkeleton id="no-wrap" loading={false}>
+					<article data-testid="only-child">Content</article>
+				</AutoSkeleton>
+			</LoadedProvider>,
+		);
+
+		expect(screen.getByTestId("only-child")).toBeInTheDocument();
+		// No wrapper div with display:contents should exist
+		expect(
+			container.querySelector('[style*="display: contents"]'),
+		).not.toBeInTheDocument();
+		// The article should be a direct child of the container
+		expect(container.firstElementChild?.tagName).toBe("ARTICLE");
+	});
+
+	it("preserves existing ref on child when cloning to eliminate wrapper", () => {
+		const childRef = createRef<HTMLDivElement>();
+
+		render(
+			<LoadedProvider registry={{}}>
+				<AutoSkeleton id="ref-merge" loading={false}>
+					<div ref={childRef} data-testid="ref-child">
+						Content
+					</div>
+				</AutoSkeleton>
+			</LoadedProvider>,
+		);
+
+		expect(screen.getByTestId("ref-child")).toBeInTheDocument();
+		expect(childRef.current).toBe(screen.getByTestId("ref-child"));
+	});
+
+	it("falls back to wrapper div when children is a Fragment", () => {
+		const { container } = render(
+			<LoadedProvider registry={{}}>
+				<AutoSkeleton id="fragment-child" loading={false}>
+					<Fragment>
+						<div data-testid="frag-a">A</div>
+						<div data-testid="frag-b">B</div>
+					</Fragment>
+				</AutoSkeleton>
+			</LoadedProvider>,
+		);
+
+		expect(screen.getByTestId("frag-a")).toBeInTheDocument();
+		expect(screen.getByTestId("frag-b")).toBeInTheDocument();
+		expect(container.querySelector('[style*="display"]')).toBeInTheDocument();
+	});
+
+	it("falls back to wrapper div when there are multiple children", () => {
+		const { container } = render(
+			<LoadedProvider registry={{}}>
+				<AutoSkeleton id="multi-child" loading={false}>
+					<div data-testid="child-a">A</div>
+					<div data-testid="child-b">B</div>
+				</AutoSkeleton>
+			</LoadedProvider>,
+		);
+
+		expect(screen.getByTestId("child-a")).toBeInTheDocument();
+		expect(screen.getByTestId("child-b")).toBeInTheDocument();
+		expect(container.querySelector('[style*="display"]')).toBeInTheDocument();
+	});
+
+	it("renders component child without forwardRef without wrapper and warns", () => {
+		const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+		function NoForwardRef() {
+			return <span data-testid="no-fwd">Hello</span>;
+		}
+
+		render(
+			<LoadedProvider registry={{}}>
+				<AutoSkeleton id="no-fwd-ref" loading={false}>
+					<NoForwardRef />
+				</AutoSkeleton>
+			</LoadedProvider>,
+		);
+
+		expect(screen.getByTestId("no-fwd")).toBeInTheDocument();
+		expect(warnSpy).toHaveBeenCalledWith(
+			expect.stringContaining('Could not access DOM for "no-fwd-ref"'),
+		);
+
+		warnSpy.mockRestore();
+	});
+
+	it("renders forwardRef component child without wrapper and no warning", () => {
+		const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+		const WithForwardRef = forwardRef<HTMLDivElement>(
+			function WithRef(_props, ref) {
+				return (
+					<div ref={ref} data-testid="fwd-child">
+						Content
+					</div>
+				);
+			},
+		);
+
+		const { container } = render(
+			<LoadedProvider registry={{}}>
+				<AutoSkeleton id="fwd-ref" loading={false}>
+					<WithForwardRef />
+				</AutoSkeleton>
+			</LoadedProvider>,
+		);
+
+		expect(screen.getByTestId("fwd-child")).toBeInTheDocument();
+		expect(container.firstElementChild?.tagName).toBe("DIV");
+		expect(
+			container.querySelector('[style*="display: contents"]'),
+		).not.toBeInTheDocument();
+		// Should not warn about DOM access since forwardRef passes the ref
+		expect(warnSpy).not.toHaveBeenCalledWith(
+			expect.stringContaining("Could not access DOM"),
+		);
+
+		warnSpy.mockRestore();
+	});
 });
 
 describe("AutoSkeleton (production mode)", () => {
@@ -428,8 +663,17 @@ describe("AutoSkeleton (production mode)", () => {
 	});
 
 	it("returns children directly when loading=false in production", () => {
-		function Generated() {
-			return <div data-testid="generated">Skeleton</div>;
+		function Generated({ className, style, dataSkId }: GeneratedProps) {
+			return (
+				<div
+					data-testid="generated"
+					className={className}
+					style={style}
+					data-sk-id={dataSkId}
+				>
+					Skeleton
+				</div>
+			);
 		}
 
 		render(
@@ -445,10 +689,16 @@ describe("AutoSkeleton (production mode)", () => {
 	});
 
 	it("renders generated skeleton with context in production when loading=true", () => {
-		function Generated() {
+		function Generated({ className, style, dataSkId }: GeneratedProps) {
 			const isSkeleton = ProdUseIsSkeletonMode();
 			return (
-				<div data-testid="prod-gen" data-skeleton={String(isSkeleton)}>
+				<div
+					data-testid="prod-gen"
+					data-skeleton={String(isSkeleton)}
+					className={className}
+					style={style}
+					data-sk-id={dataSkId}
+				>
 					Skeleton
 				</div>
 			);
@@ -480,5 +730,36 @@ describe("AutoSkeleton (production mode)", () => {
 		);
 
 		expect(screen.getByTestId("prod-fallback")).toBeInTheDocument();
+	});
+
+	it("renders single DOM child without wrapper in production when loading=false", () => {
+		const { container } = render(
+			<ProdLoadedProvider registry={{}}>
+				<ProdAutoSkeleton id="prod-no-wrap" loading={false}>
+					<section data-testid="prod-only">Content</section>
+				</ProdAutoSkeleton>
+			</ProdLoadedProvider>,
+		);
+
+		expect(screen.getByTestId("prod-only")).toBeInTheDocument();
+		expect(
+			container.querySelector('[style*="display: contents"]'),
+		).not.toBeInTheDocument();
+		expect(container.firstElementChild?.tagName).toBe("SECTION");
+	});
+
+	it("falls back to wrapper in production with multiple children", () => {
+		const { container } = render(
+			<ProdLoadedProvider registry={{}}>
+				<ProdAutoSkeleton id="prod-multi" loading={false}>
+					<div data-testid="a">A</div>
+					<div data-testid="b">B</div>
+				</ProdAutoSkeleton>
+			</ProdLoadedProvider>,
+		);
+
+		expect(screen.getByTestId("a")).toBeInTheDocument();
+		expect(screen.getByTestId("b")).toBeInTheDocument();
+		expect(container.querySelector('[style*="display"]')).toBeInTheDocument();
 	});
 });
