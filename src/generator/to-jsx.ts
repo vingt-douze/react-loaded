@@ -142,7 +142,8 @@ function nodeToJsx(
 		// --loaded-text-width actually controls the element width.
 		// Set explicit width so the • text (which may be wider or narrower
 		// than the original) doesn't determine the element's intrinsic size.
-		// No overflow:hidden needed — text is already color:transparent.
+		// The masked • string can be longer than the measured width; .loaded-text
+		// clips the overflow (overflow: clip) so it never leaks into the layout.
 		if (INLINE_TAGS.has(tag)) {
 			style.display = "inline-block";
 			style.width = `var(--loaded-text-width, auto)`;
@@ -155,8 +156,17 @@ function nodeToJsx(
 			node.nodeType === "interactive") &&
 		node.rect
 	) {
-		if (!style.width) style.width = `${node.rect.width}px`;
-		if (!style.height) style.height = `${node.rect.height}px`;
+		// The root box adapts to the previous render: its width/height are
+		// overridable at runtime via --sk-w-e0 / --sk-h-e0 (measured from the
+		// live element), mirroring how text adapts via --sk-w-tN. The captured
+		// rect is the fallback. Nested boxes keep their captured size.
+		if (isRoot) {
+			if (!style.width) style.width = `var(--sk-w-e0, ${node.rect.width}px)`;
+			if (!style.height) style.height = `var(--sk-h-e0, ${node.rect.height}px)`;
+		} else {
+			if (!style.width) style.width = `${node.rect.width}px`;
+			if (!style.height) style.height = `${node.rect.height}px`;
+		}
 	}
 
 	// Build JSX attributes

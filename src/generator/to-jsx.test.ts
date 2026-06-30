@@ -82,7 +82,7 @@ describe("generateComponent", () => {
 			`className={\`loaded-skeleton loaded-animate loaded-media${variantClassSuffix}${classNamePropSuffix}\`}`,
 		);
 		expect(output).toContain(
-			'style={{ ...{ width: "320px", height: "180px" }, ...style } as React.CSSProperties}',
+			'style={{ ...{ width: "var(--sk-w-e0, 320px)", height: "var(--sk-h-e0, 180px)" }, ...style } as React.CSSProperties}',
 		);
 		expect(output).toContain('aria-label="thumbnail"');
 		expect(output).toContain("<div");
@@ -121,8 +121,37 @@ describe("generateComponent", () => {
 		expect(output).not.toContain("<svg");
 		expect(output).toContain("loaded-svg");
 		expect(output).toContain(
-			'style={{ ...{ width: "24px", height: "24px" }, ...style } as React.CSSProperties}',
+			'style={{ ...{ width: "var(--sk-w-e0, 24px)", height: "var(--sk-h-e0, 24px)" }, ...style } as React.CSSProperties}',
 		);
+	});
+
+	it("keeps captured px for nested boxes (only the root adapts)", () => {
+		const tree: CapturedNode = {
+			tag: "button",
+			className: "btn",
+			style: {},
+			attributes: {},
+			nodeType: "interactive",
+			rect: { width: 200, height: 40 },
+			children: [
+				{
+					tag: "img",
+					className: "",
+					style: {},
+					attributes: {},
+					children: [],
+					nodeType: "media",
+					rect: { width: 32, height: 32 },
+				},
+			],
+		};
+
+		const output = generateComponent("avatar-btn", tree);
+
+		expect(output).toContain("var(--sk-w-e0, 200px)");
+		expect(output).toContain("var(--sk-h-e0, 40px)");
+		expect(output).toContain('width: "32px", height: "32px"');
+		expect(output).not.toContain("var(--sk-w-e1");
 	});
 
 	it("renders interactive nodes with non-breaking space", () => {

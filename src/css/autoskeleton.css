@@ -69,6 +69,7 @@
 /* Text skeleton: positioned container for pseudo-element bar */
 .loaded-skeleton .loaded-text {
 	position: relative;
+	overflow: clip !important;
 	min-width: var(--loaded-text-width, 0) !important;
 	min-height: var(--loaded-text-height, auto) !important;
 	background-color: transparent !important;

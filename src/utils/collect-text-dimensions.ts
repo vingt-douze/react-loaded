@@ -16,6 +16,11 @@ export type TextDimensions = {
  * serialize.ts so the indices match 1-to-1 with the `.loaded-text`
  * nodes in the generated skeleton.
  *
+ * When the root itself is an interactive/media/svg box, its box dimensions are
+ * measured under the `e0` key — matching the `var(--sk-w-e0, …)` /
+ * `var(--sk-h-e0, …)` the generator emits for a box root — so the skeleton's
+ * outer size adapts to the previous render instead of staying frozen.
+ *
  * Returns `{ widths: { "t0": w, ... }, heights: { "t0": h, ... } }` where
  * keys follow the same depth-first order as the CLI generator.
  */
@@ -23,6 +28,19 @@ export function collectTextDimensions(root: Element): TextDimensions {
 	const widths: Record<string, number> = {};
 	const heights: Record<string, number> = {};
 	const counter = { value: 0 };
+
+	const rootTag = root.tagName.toUpperCase();
+	const isBoxRoot =
+		MEDIA_TAGS.has(rootTag) ||
+		SVG_TAGS.has(rootTag) ||
+		INTERACTIVE_TAGS.has(rootTag) ||
+		root.getAttribute("role") === "button";
+	if (isBoxRoot) {
+		const rect = root.getBoundingClientRect();
+		widths.e0 = rect.width;
+		heights.e0 = rect.height;
+	}
+
 	collectFromElement(root, widths, heights, counter);
 	return { widths, heights };
 }

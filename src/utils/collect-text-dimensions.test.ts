@@ -185,12 +185,37 @@ describe("collectTextDimensions", () => {
 			width: 60,
 			height: 14,
 		});
-		const root = createElement("button", { children: [span] });
+		const root = createElement("button", {
+			children: [span],
+			width: 100,
+			height: 40,
+		});
 
 		const result = collectTextDimensions(root);
 
-		expect(Object.keys(result.widths)).toEqual(["t0"]);
+		expect(Object.keys(result.widths).sort()).toEqual(["e0", "t0"]);
+		expect(result.widths.e0).toBe(100);
+		expect(result.heights.e0).toBe(40);
 		expect(result.heights.t0).toBe(14);
+	});
+
+	it("measures the root box (e0) for an interactive/media/svg root", () => {
+		const root = createElement("button", { width: 100, height: 40 });
+
+		const result = collectTextDimensions(root);
+
+		expect(result.widths.e0).toBe(100);
+		expect(result.heights.e0).toBe(40);
+	});
+
+	it("does not emit a root box key for a non-box root (div)", () => {
+		const span = createElement("span", { text: "Hi", width: 30, height: 12 });
+		const root = createElement("div", { children: [span] });
+
+		const result = collectTextDimensions(root);
+
+		expect(result.widths.e0).toBeUndefined();
+		expect(Object.keys(result.widths)).toEqual(["t0"]);
 	});
 
 	it("does not measure bare text nodes inside interactive elements", () => {

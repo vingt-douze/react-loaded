@@ -491,8 +491,8 @@ describe("skeleton layout fidelity", () => {
 
 			expect(root.tagName).toBe("DIV");
 			expect(root.classList.contains("loaded-media")).toBe(true);
-			expect(root.style.width).toBe("320px");
-			expect(root.style.height).toBe("180px");
+			expect(root.style.width).toBe("var(--sk-w-e0, 320px)");
+			expect(root.style.height).toBe("var(--sk-h-e0, 180px)");
 		});
 
 		it("svg is replaced with div and has explicit dimensions", () => {
@@ -502,8 +502,8 @@ describe("skeleton layout fidelity", () => {
 
 			expect(root.tagName).toBe("DIV");
 			expect(root.classList.contains("loaded-svg")).toBe(true);
-			expect(root.style.width).toBe("24px");
-			expect(root.style.height).toBe("24px");
+			expect(root.style.width).toBe("var(--sk-w-e0, 24px)");
+			expect(root.style.height).toBe("var(--sk-h-e0, 24px)");
 		});
 
 		it("video is replaced with div and has explicit dimensions", () => {
@@ -513,8 +513,8 @@ describe("skeleton layout fidelity", () => {
 
 			expect(root.tagName).toBe("DIV");
 			expect(root.classList.contains("loaded-media")).toBe(true);
-			expect(root.style.width).toBe("640px");
-			expect(root.style.height).toBe("360px");
+			expect(root.style.width).toBe("var(--sk-w-e0, 640px)");
+			expect(root.style.height).toBe("var(--sk-h-e0, 360px)");
 		});
 	});
 
@@ -529,8 +529,8 @@ describe("skeleton layout fidelity", () => {
 
 			expect(root.tagName).toBe("BUTTON");
 			expect(root.classList.contains("loaded-interactive")).toBe(true);
-			expect(root.style.width).toBe("120px");
-			expect(root.style.height).toBe("40px");
+			expect(root.style.width).toBe("var(--sk-w-e0, 120px)");
+			expect(root.style.height).toBe("var(--sk-h-e0, 40px)");
 			// Non-breaking space placeholder
 			expect(root.textContent).toBe("\u00A0");
 		});
@@ -579,8 +579,8 @@ describe("skeleton layout fidelity", () => {
 
 			expect(root.tagName).toBe("A");
 			expect(root.classList.contains("loaded-interactive")).toBe(true);
-			expect(root.style.width).toBe("200px");
-			expect(root.style.height).toBe("24px");
+			expect(root.style.width).toBe("var(--sk-w-e0, 200px)");
+			expect(root.style.height).toBe("var(--sk-h-e0, 24px)");
 		});
 	});
 
