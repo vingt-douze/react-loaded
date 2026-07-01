@@ -182,7 +182,7 @@ describe("handleCapture integration — registry generation", () => {
 		expect(registry).toContain("http://127.0.0.1:7331");
 	});
 
-	it("captureUrl must be a base URL without /capture path (client appends it)", () => {
+	it("captureUrl must be a base URL without /react-loaded-capture path (client appends it)", () => {
 		const outDir = makeTempDir();
 
 		// Simulate what dev-server does: pass base URL only
@@ -195,16 +195,16 @@ describe("handleCapture integration — registry generation", () => {
 		expect(urlMatch).not.toBeNull();
 		const configUrl = urlMatch?.[1];
 
-		// The URL must NOT end with /capture — client.ts appends it:
-		//   fetch(`${captureUrl}/capture`, ...)
-		// If captureUrl is "http://localhost:7331/capture", the final URL becomes
-		// "http://localhost:7331/capture/capture" → 404
-		expect(configUrl).not.toMatch(/\/capture$/);
+		// The URL must NOT end with /react-loaded-capture — client.ts appends it:
+		//   fetch(`${captureUrl}/react-loaded-capture`, ...)
+		// If captureUrl is "http://localhost:7331/react-loaded-capture", the final URL becomes
+		// "http://localhost:7331/react-loaded-capture/react-loaded-capture" → 404
+		expect(configUrl).not.toMatch(/\/react-loaded-capture$/);
 
 		// Verify the full endpoint URL the client would build is correct
-		const clientEndpoint = `${configUrl}/capture`;
+		const clientEndpoint = `${configUrl}/react-loaded-capture`;
 		const parsed = new URL(clientEndpoint);
-		expect(parsed.pathname).toBe("/capture");
+		expect(parsed.pathname).toBe("/react-loaded-capture");
 	});
 });
 
@@ -217,7 +217,7 @@ describe("dev-server integration — full HTTP pipeline", () => {
 		if (server) await server.stop();
 	});
 
-	it("creates files on disk when POST /capture is sent", async () => {
+	it("creates files on disk when POST /react-loaded-capture is sent", async () => {
 		outDir = join(makeTempDir(), "generated", "skeletons");
 		server = createDevServer({ port: 0, outDir });
 		await server.start();
@@ -225,7 +225,7 @@ describe("dev-server integration — full HTTP pipeline", () => {
 
 		const payload = makePayload("hero-banner", "Welcome to our site");
 
-		const res = await fetch(`${baseUrl}/capture`, {
+		const res = await fetch(`${baseUrl}/react-loaded-capture`, {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify(payload),
@@ -253,7 +253,7 @@ describe("dev-server integration — full HTTP pipeline", () => {
 
 		// Send two different captures
 		for (const id of ["nav-bar", "footer-widget"]) {
-			const res = await fetch(`${baseUrl}/capture`, {
+			const res = await fetch(`${baseUrl}/react-loaded-capture`, {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify(makePayload(id)),
@@ -277,13 +277,13 @@ describe("dev-server integration — full HTTP pipeline", () => {
 		expect(footerIdx).toBeLessThan(navIdx);
 	});
 
-	it("writes __captureConfig__ with correct base URL (no double /capture)", async () => {
+	it("writes __captureConfig__ with correct base URL (no double /react-loaded-capture)", async () => {
 		outDir = makeTempDir();
 		server = createDevServer({ port: 0, outDir });
 		await server.start();
 		baseUrl = `http://localhost:${server.port}`;
 
-		const res = await fetch(`${baseUrl}/capture`, {
+		const res = await fetch(`${baseUrl}/react-loaded-capture`, {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify(makePayload("test-component")),
@@ -298,14 +298,14 @@ describe("dev-server integration — full HTTP pipeline", () => {
 		expect(urlMatch).not.toBeNull();
 		const configUrl = urlMatch?.[1];
 
-		// Must NOT contain /capture — the client appends it
-		expect(configUrl).not.toMatch(/\/capture/);
+		// Must NOT contain /react-loaded-capture — the client appends it
+		expect(configUrl).not.toMatch(/\/react-loaded-capture/);
 
 		// Must be a valid base URL pointing to the actual server port
 		expect(configUrl).toBe(`http://localhost:${server.port}`);
 
-		// Simulate what client.ts does: append /capture and verify it works
-		const verifyRes = await fetch(`${configUrl}/capture`, {
+		// Simulate what client.ts does: append /react-loaded-capture and verify it works
+		const verifyRes = await fetch(`${configUrl}/react-loaded-capture`, {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify(makePayload("roundtrip-test")),

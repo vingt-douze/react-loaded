@@ -17,14 +17,14 @@ const mockTree: CapturedNode = {
 	nodeType: "layout",
 };
 
+let beaconSpy: ReturnType<typeof vi.fn>;
 let fetchSpy: ReturnType<typeof vi.fn>;
 
 beforeEach(() => {
 	vi.mocked(serializeElement).mockReturnValue(mockTree);
-	fetchSpy = vi.fn().mockResolvedValue({
-		ok: true,
-		json: () => Promise.resolve({ result: "generated" }),
-	});
+	beaconSpy = vi.fn().mockReturnValue(true);
+	vi.stubGlobal("navigator", { sendBeacon: beaconSpy });
+	fetchSpy = vi.fn().mockResolvedValue({ ok: true });
 	vi.stubGlobal("fetch", fetchSpy);
 	configureCapture({ url: "http://127.0.0.1:7331" });
 });
@@ -39,34 +39,58 @@ describe("configureCapture", () => {
 		configureCapture({ url: "http://localhost:9000" });
 		sendCapture({ id: "test", tree: mockTree, timestamp: 1 });
 
-		const [url] = fetchSpy.mock.calls[0];
-		expect(url).toBe("http://localhost:9000/capture");
+		const [url] = beaconSpy.mock.calls[0];
+		expect(url).toBe("http://localhost:9000/react-loaded-capture");
 	});
 
 	it("sets capture URL via port option", () => {
 		configureCapture({ port: 5000 });
 		sendCapture({ id: "test", tree: mockTree, timestamp: 1 });
 
-		const [url] = fetchSpy.mock.calls[0];
-		expect(url).toBe("http://127.0.0.1:5000/capture");
+		const [url] = beaconSpy.mock.calls[0];
+		expect(url).toBe("http://127.0.0.1:5000/react-loaded-capture");
 	});
 });
 
 describe("sendCapture", () => {
-	it("sends POST to capture endpoint", () => {
+	it("sends the payload to the capture endpoint via sendBeacon", () => {
 		const payload = { id: "my-card", tree: mockTree, timestamp: 123 };
+		sendCapture(payload);
+
+		expect(beaconSpy).toHaveBeenCalledTimes(1);
+		const [url, body] = beaconSpy.mock.calls[0];
+		expect(url).toBe("http://127.0.0.1:7331/react-loaded-capture");
+		expect(JSON.parse(body)).toEqual(payload);
+	});
+
+	it("does not fall back to fetch when the server is unavailable", () => {
+		// A down server still returns true (queued, then fails in the background),
+		// so we must NOT trigger the fetch fallback — that would re-introduce the
+		// console errors sendBeacon exists to avoid.
+		sendCapture({ id: "test", tree: mockTree, timestamp: 1 });
+
+		expect(beaconSpy).toHaveBeenCalledTimes(1);
+		expect(fetchSpy).not.toHaveBeenCalled();
+	});
+
+	it("falls back to fetch when the payload exceeds the beacon size cap", () => {
+		// sendBeacon returns false when the payload is too large to queue.
+		beaconSpy.mockReturnValue(false);
+		const payload = { id: "big", tree: mockTree, timestamp: 1 };
+
 		sendCapture(payload);
 
 		expect(fetchSpy).toHaveBeenCalledTimes(1);
 		const [url, init] = fetchSpy.mock.calls[0];
-		expect(url).toBe("http://127.0.0.1:7331/capture");
+		expect(url).toBe("http://127.0.0.1:7331/react-loaded-capture");
 		expect(init.method).toBe("POST");
-		expect(init.headers["Content-Type"]).toBe("application/json");
 		expect(JSON.parse(init.body)).toEqual(payload);
 	});
 
-	it("silently ignores fetch errors", () => {
+	it("does not throw when the fetch fallback rejects", () => {
+		beaconSpy.mockReturnValue(false);
 		fetchSpy.mockRejectedValue(new Error("network error"));
+
 		expect(() =>
 			sendCapture({ id: "test", tree: mockTree, timestamp: 1 }),
 		).not.toThrow();
@@ -79,11 +103,12 @@ describe("captureElement", () => {
 		captureElement("my-card", el);
 
 		expect(serializeElement).toHaveBeenCalledWith(el);
-		expect(fetchSpy).toHaveBeenCalledTimes(1);
+		expect(beaconSpy).toHaveBeenCalledTimes(1);
 
-		const body = JSON.parse(fetchSpy.mock.calls[0][1].body);
-		expect(body.id).toBe("my-card");
-		expect(body.tree).toEqual(mockTree);
+		const [, body] = beaconSpy.mock.calls[0];
+		const parsed = JSON.parse(body);
+		expect(parsed.id).toBe("my-card");
+		expect(parsed.tree).toEqual(mockTree);
 	});
 
 	it("does nothing when serializeElement returns null", () => {
@@ -91,6 +116,6 @@ describe("captureElement", () => {
 		const el = document.createElement("div");
 		captureElement("my-card", el);
 
-		expect(fetchSpy).not.toHaveBeenCalled();
+		expect(beaconSpy).not.toHaveBeenCalled();
 	});
 });

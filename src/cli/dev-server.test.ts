@@ -88,11 +88,11 @@ describe("createDevServer", () => {
 		});
 	});
 
-	describe("POST /capture", () => {
+	describe("POST /react-loaded-capture", () => {
 		it("returns result from handleCapture", async () => {
 			const payload = makePayload();
 
-			const res = await fetch(`${baseUrl}/capture`, {
+			const res = await fetch(`${baseUrl}/react-loaded-capture`, {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify(payload),
@@ -104,7 +104,7 @@ describe("createDevServer", () => {
 		});
 
 		it("returns 400 for invalid JSON", async () => {
-			const res = await fetch(`${baseUrl}/capture`, {
+			const res = await fetch(`${baseUrl}/react-loaded-capture`, {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: "not json",
@@ -116,7 +116,7 @@ describe("createDevServer", () => {
 		});
 
 		it("returns 413 for oversized body", async () => {
-			const res = await fetch(`${baseUrl}/capture`, {
+			const res = await fetch(`${baseUrl}/react-loaded-capture`, {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({
@@ -131,7 +131,7 @@ describe("createDevServer", () => {
 		});
 
 		it("returns 400 when payload is missing id", async () => {
-			const res = await fetch(`${baseUrl}/capture`, {
+			const res = await fetch(`${baseUrl}/react-loaded-capture`, {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({ tree: makePayload().tree }),
@@ -143,7 +143,7 @@ describe("createDevServer", () => {
 		});
 
 		it("returns 400 when payload is missing tree", async () => {
-			const res = await fetch(`${baseUrl}/capture`, {
+			const res = await fetch(`${baseUrl}/react-loaded-capture`, {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({ id: "test-card" }),
@@ -158,7 +158,7 @@ describe("createDevServer", () => {
 			const { handleCapture } = await import("./handle-capture");
 			vi.mocked(handleCapture).mockClear();
 
-			const res = await fetch(`${baseUrl}/capture`, {
+			const res = await fetch(`${baseUrl}/react-loaded-capture`, {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify(makePayload({ id: "../evil" })),
@@ -176,7 +176,7 @@ describe("createDevServer", () => {
 			const { handleCapture } = await import("./handle-capture");
 			vi.mocked(handleCapture).mockClear();
 
-			const res = await fetch(`${baseUrl}/capture`, {
+			const res = await fetch(`${baseUrl}/react-loaded-capture`, {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify(
@@ -205,7 +205,7 @@ describe("createDevServer", () => {
 				throw new Error('Path traversal detected: "../evil" escapes outDir');
 			});
 
-			const res = await fetch(`${baseUrl}/capture`, {
+			const res = await fetch(`${baseUrl}/react-loaded-capture`, {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify(makePayload()),
@@ -226,7 +226,7 @@ describe("createDevServer", () => {
 			const lockedBaseUrl = `http://localhost:${lockedServer.port}`;
 
 			try {
-				const res = await fetch(`${lockedBaseUrl}/capture`, {
+				const res = await fetch(`${lockedBaseUrl}/react-loaded-capture`, {
 					method: "POST",
 					headers: { "Content-Type": "application/json" },
 					body: JSON.stringify(makePayload()),
@@ -249,8 +249,8 @@ describe("createDevServer", () => {
 	});
 
 	describe("405", () => {
-		it("returns 405 for invalid method on /capture", async () => {
-			const res = await fetch(`${baseUrl}/capture`, {
+		it("returns 405 for invalid method on /react-loaded-capture", async () => {
+			const res = await fetch(`${baseUrl}/react-loaded-capture`, {
 				method: "GET",
 			});
 
@@ -262,7 +262,7 @@ describe("createDevServer", () => {
 
 	describe("CORS", () => {
 		it("returns allow-origin for allowlisted origins only", async () => {
-			const allowed = await fetch(`${baseUrl}/capture`, {
+			const allowed = await fetch(`${baseUrl}/react-loaded-capture`, {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
@@ -278,7 +278,7 @@ describe("createDevServer", () => {
 		});
 
 		it("does not return allow-origin for disallowed origins", async () => {
-			const denied = await fetch(`${baseUrl}/capture`, {
+			const denied = await fetch(`${baseUrl}/react-loaded-capture`, {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
@@ -292,7 +292,7 @@ describe("createDevServer", () => {
 		});
 
 		it("handles OPTIONS preflight", async () => {
-			const res = await fetch(`${baseUrl}/capture`, {
+			const res = await fetch(`${baseUrl}/react-loaded-capture`, {
 				method: "OPTIONS",
 				headers: {
 					Origin: "http://localhost:3000",
@@ -312,7 +312,7 @@ describe("createDevServer", () => {
 			const { handleCapture } = await import("./handle-capture");
 			vi.mocked(handleCapture).mockClear();
 
-			const res = await fetch(`${baseUrl}/capture`, {
+			const res = await fetch(`${baseUrl}/react-loaded-capture`, {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify(
@@ -352,7 +352,7 @@ describe("createDevServer", () => {
 		});
 
 		it("returns 400 when textContent is a number", async () => {
-			const res = await fetch(`${baseUrl}/capture`, {
+			const res = await fetch(`${baseUrl}/react-loaded-capture`, {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify(
@@ -376,7 +376,7 @@ describe("createDevServer", () => {
 		});
 
 		it("returns 400 when textAlign is an invalid value", async () => {
-			const res = await fetch(`${baseUrl}/capture`, {
+			const res = await fetch(`${baseUrl}/react-loaded-capture`, {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify(
@@ -400,7 +400,7 @@ describe("createDevServer", () => {
 		});
 
 		it("returns 400 when rect has negative dimensions", async () => {
-			const res = await fetch(`${baseUrl}/capture`, {
+			const res = await fetch(`${baseUrl}/react-loaded-capture`, {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify(
@@ -426,7 +426,7 @@ describe("createDevServer", () => {
 
 	describe("non-object JSON payloads", () => {
 		it("returns 400 when payload is a JSON array", async () => {
-			const res = await fetch(`${baseUrl}/capture`, {
+			const res = await fetch(`${baseUrl}/react-loaded-capture`, {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify([1, 2, 3]),
@@ -438,7 +438,7 @@ describe("createDevServer", () => {
 		});
 
 		it("returns 400 when payload is a JSON string", async () => {
-			const res = await fetch(`${baseUrl}/capture`, {
+			const res = await fetch(`${baseUrl}/react-loaded-capture`, {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify("just a string"),

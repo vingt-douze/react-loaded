@@ -212,7 +212,7 @@ export function createDevServer(options: DevServerOptions): DevServer {
 			return;
 		}
 
-		if (url.pathname === "/capture") {
+		if (url.pathname === "/react-loaded-capture") {
 			if (req.method === "OPTIONS") {
 				res.writeHead(204);
 				res.end();
