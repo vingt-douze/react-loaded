@@ -37,6 +37,8 @@ export function sendCapture(payload: CapturePayload): void {
 }
 
 export function captureElement(id: string, element: Element): void {
+	if (!(element instanceof Element)) return;
+
 	const tree = serializeElement(element);
 	if (!tree) return;
 

@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { Fragment, forwardRef, type Ref } from "react";
+import { Fragment, forwardRef, type Ref, useImperativeHandle } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { AutoSkeleton } from "./AutoSkeleton";
 import { LoadedProvider } from "./LoadedProvider";
@@ -251,6 +251,36 @@ describe("AutoSkeleton (wrapper integration)", () => {
 			expect(screen.getByTestId("ref-prop-ignoring-child").parentElement).toBe(
 				wrapper,
 			);
+		});
+	});
+
+	it("falls back to wrapper when the child's ref resolves to a non-DOM handle (e.g. Ant Design Form)", async () => {
+		// Ant Design's <Form> is a forwardRef component whose ref exposes an
+		// imperative FormInstance, not the DOM <form>. Measuring/serializing that
+		// object throws on `.tagName`, so the child must fall back to the wrapper.
+		const FormLike = forwardRef<{ submit: () => void }>(
+			function FormLike(_props, ref) {
+				useImperativeHandle(ref, () => ({ submit: () => {} }), []);
+				return <div data-testid="form-like-child">Hello</div>;
+			},
+		);
+
+		render(
+			<div data-testid="parent">
+				<AutoSkeleton loading={false}>
+					<FormLike />
+				</AutoSkeleton>
+			</div>,
+		);
+
+		const parent = screen.getByTestId("parent");
+		expect(screen.getByTestId("form-like-child")).toBeInTheDocument();
+
+		await waitFor(() => {
+			const wrapper = parent.querySelector('[data-loaded-wrapper="true"]');
+			expect(wrapper).toBeInTheDocument();
+			expect(wrapper?.parentElement).toBe(parent);
+			expect(screen.getByTestId("form-like-child").parentElement).toBe(wrapper);
 		});
 	});
 });

@@ -113,6 +113,10 @@ function setRef(
 	else ref.current = el;
 }
 
+function asDomElement(value: unknown): HTMLElement | null {
+	return value instanceof Element ? (value as HTMLElement) : null;
+}
+
 function tryCloneWithRef(
 	children: ReactNode,
 	ref: RefCallback<HTMLElement>,
@@ -226,8 +230,9 @@ export const AutoSkeleton = forwardRef<HTMLElement, AutoSkeletonAllProps>(
 				: tryCloneWithRef(
 						children,
 						(el) => {
-							attachedRef.current = el;
-							setRef(externalRef, el);
+							const domEl = asDomElement(el);
+							attachedRef.current = domEl;
+							setRef(externalRef, domEl);
 						},
 						forwardedRest,
 					);

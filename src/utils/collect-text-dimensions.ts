@@ -29,6 +29,8 @@ export function collectTextDimensions(root: Element): TextDimensions {
 	const heights: Record<string, number> = {};
 	const counter = { value: 0 };
 
+	if (!(root instanceof Element)) return { widths, heights };
+
 	const rootTag = root.tagName.toUpperCase();
 	const isBoxRoot =
 		MEDIA_TAGS.has(rootTag) ||
