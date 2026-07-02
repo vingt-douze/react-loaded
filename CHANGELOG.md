@@ -5,6 +5,46 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-beta.6] - 2026-07-02
+
+### Fixed
+
+- `AutoSkeleton` no longer crashes (`root.tagName is undefined`) when its direct child is a component whose ref resolves to a non-DOM value — e.g. Ant Design's `<Form>`, which exposes an imperative `FormInstance` via `useImperativeHandle` instead of the DOM node. Such refs are now coerced to `null`, so the child falls back to the measurable wrapper `<div>`. `collectTextDimensions` and `captureElement` also guard against non-`Element` roots as a safety net.
+
+## [1.0.0-beta.5] - 2026-07-01
+
+### Changed
+
+- Dev capture endpoint moved to `/react-loaded-capture` — a branded path that's easy to identify in the browser's Network tab.
+
+## [1.0.0-beta.4] - 2026-06-30
+
+### Changed
+
+- Reworked skeleton dimension handling and added overflow clipping to `.loaded-text`, so long text no longer overflows its skeleton slot.
+
+## [1.0.0-beta.3] - 2026-03-25
+
+### Added
+
+- `frozen` prop on `AutoSkeleton` to opt a skeleton out of automatic re-capture and file updates.
+
+### Fixed
+
+- Generator now handles void elements (e.g. `<img>`, `<br>`) correctly when serializing captured children.
+
+## [1.0.0-beta.2] - 2026-03-23
+
+### Added
+
+- `release:*` / `publish:*` scripts for coordinated npm + JSR publishing.
+- Browser tests (jsdom) wired into CI.
+- README and documentation guides.
+
+### Changed
+
+- Repository metadata in `package.json`.
+
 ## [1.0.0-beta.1] - 2026-03-23
 
 Full TDD rewrite (v3) — cleaner architecture, improved test coverage, new features.
