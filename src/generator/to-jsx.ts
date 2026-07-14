@@ -231,6 +231,11 @@ function nodeToJsx(
 		if (VOID_TAGS.has(tag)) {
 			return `${pad}<${tag}${attrString} />`;
 		}
+		// React reads a textarea's content from defaultValue and errors when it
+		// is passed as children, unlike every other non-void interactive tag.
+		if (tag === "textarea") {
+			return `${pad}<${tag}${attrString} defaultValue={"\\u00A0"} />`;
+		}
 		if (isRoot && node.children.length > 0) {
 			const childrenJsx = node.children
 				.map((child) => nodeToJsx(child, indent + 2, false, textCounter))

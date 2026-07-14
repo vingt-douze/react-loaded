@@ -192,6 +192,23 @@ describe("generateComponent", () => {
 		expect(output).not.toContain("\\u00A0");
 	});
 
+	it("renders textarea content as defaultValue rather than children", () => {
+		const tree: CapturedNode = {
+			tag: "textarea",
+			className: "page-editor-title",
+			style: { height: "60px" },
+			attributes: { "aria-label": "Titre de la page" },
+			children: [],
+			nodeType: "interactive",
+			rect: { width: 792, height: 60 },
+		};
+
+		const output = generateComponent("page-editor", tree);
+
+		expect(output).toContain('defaultValue={"\\u00A0"}');
+		expect(output).not.toContain("</textarea>");
+	});
+
 	it("indents nested children correctly", () => {
 		const tree: CapturedNode = {
 			tag: "div",
